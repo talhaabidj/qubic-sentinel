@@ -1,0 +1,12 @@
+{
+    "transactions": [
+        {
+            "sourceId": "BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARMID",
+            "destId": "JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARMID",
+            "amount": "5000000000",
+            "tickNumber": 12345678,
+            "txId": "TEST_TRANSACTION_HASH_FOR_DEMO_VIDEO"
+        }
+    ],
+    "tickNumber": 12345678
+}
