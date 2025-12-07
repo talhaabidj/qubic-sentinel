@@ -1,0 +1,15 @@
+# System Files
+.DS_Store
+Thumbs.db
+
+# Node/n8n
+node_modules/
+.env
+.n8n/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Config with secrets (if any local copies exist)
+config/local_*.json
