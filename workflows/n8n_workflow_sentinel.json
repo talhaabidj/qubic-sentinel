@@ -1,0 +1,222 @@
+{
+  "name": "Qubic Sentinel - Whale Alert System",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ],
+      "notes": "Polls every 1 minute to stay within free tier limits"
+    },
+    {
+      "parameters": {
+        "url": "https://rpc.qubic.org/v1/status",
+        "options": {}
+      },
+      "id": "get-status",
+      "name": "Get Network Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        450,
+        300
+      ],
+      "notes": "Fetches the latest tick information"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://rpc.qubic.org/v1/tick-transactions/' + $json.lastTick }}",
+        "options": {}
+      },
+      "id": "get-transactions",
+      "name": "Get Tick Transactions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        650,
+        300
+      ],
+      "notes": "Fetches all transactions for the latest tick"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Configuration\nconst WHALE_THRESHOLD = 1000000000; // 1 Billion QUBIC\nconst QX_CONTRACT_ADDRESS = \"BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARMID\";\n\nconst items = $input.all();\nconst results = [];\n\n// Iterate through all items (transactions)\nfor (const item of items) {\n  const data = item.json;\n  \n  // Check if transactions array exists\n  if (data.transactions && Array.isArray(data.transactions)) {\n    for (const tx of data.transactions) {\n      // Parse amount (Qubic amounts are often strings)\n      const amount = parseInt(tx.amount || '0');\n      \n      // Filter: Only process if amount > Threshold\n      if (amount >= WHALE_THRESHOLD) {\n        \n        // Determine Transaction Type\n        let type = \"Transfer\";\n        let riskScore = \"Low\";\n        \n        // Check for QX Contract Interaction\n        if (tx.destId === QX_CONTRACT_ADDRESS) {\n          type = \"QX_Interaction\";\n          riskScore = \"Medium\"; // DEX interactions are interesting\n        }\n        \n        // High Value Flag\n        if (amount > 10000000000) { // > 10B\n          riskScore = \"High\";\n        }\n\n        results.push({\n          json: {\n            tx_hash: tx.txId || 'unknown',\n            source_id: tx.sourceId,\n            dest_id: tx.destId,\n            amount_qu: amount,\n            type: type,\n            risk_score: riskScore,\n            tick: data.tickNumber,\n            timestamp: new Date().toISOString()\n          }\n        });\n      }\n    }\n  }\n}\n\nreturn results;"
+      },
+      "id": "whale-filter",
+      "name": "Whale Filter Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        300
+      ],
+      "notes": "Filters transactions > 1B QUBIC and identifies QX interactions"
+    },
+    {
+      "parameters": {
+        "url": "https://api.coingecko.com/api/v3/simple/price?ids=qubic-network&vs_currencies=usd",
+        "options": {}
+      },
+      "id": "get-price",
+      "name": "Get QUBIC Price",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1050,
+        300
+      ],
+      "notes": "Fetches current USD price from CoinGecko"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge Price Data with Transaction Data\nconst transactions = $items(\"Whale Filter Logic\");\nconst priceData = $input.first().json;\nconst priceUsd = priceData['qubic-network'].usd;\n\nconst results = [];\n\nfor (const tx of transactions) {\n  const txJson = tx.json;\n  \n  // Calculate USD Value\n  // Note: Qubic Units need to be scaled if necessary, assuming raw units here for simplicity\n  // Adjust logic if Qubic has decimals (usually 0 for raw units, but check explorer)\n  const amountUsd = txJson.amount_qu * priceUsd;\n  \n  // Formatting for Display\n  const formatter = new Intl.NumberFormat('en-US', {\n    style: 'currency',\n    currency: 'USD',\n  });\n  \n  // Masking Addresses for Privacy/Readability\n  const sourceMasked = txJson.source_id.substring(0, 4) + '...' + txJson.source_id.substring(txJson.source_id.length - 4);\n  const destMasked = txJson.dest_id.substring(0, 4) + '...' + txJson.dest_id.substring(txJson.dest_id.length - 4);\n\n  // Determine Embed Color based on Type\n  let color = 3447003; // Blue (Transfer)\n  if (txJson.type === 'QX_Interaction') color = 15844367; // Gold\n  if (txJson.risk_score === 'High') color = 15158332; // Red\n\n  results.push({\n    json: {\n      ...txJson,\n      price_per_qubic: priceUsd,\n      amount_usd: amountUsd.toFixed(2),\n      amount_formatted: (txJson.amount_qu / 1000000000).toFixed(2) + 'B',\n      amount_usd_formatted: formatter.format(amountUsd),\n      source_masked: sourceMasked,\n      dest_masked: destMasked,\n      embed_color: color,\n      bot_name: \"Qubic Sentinel\",\n      avatar: \"https://github.com/Qubic-Solutions/design-assets/blob/main/logo/png/Qubic_Logo_Icon_Black.png?raw=true\"\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "enrich-data",
+      "name": "Enrich Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        300
+      ],
+      "notes": "Calculates USD values and formats strings for Discord"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_DISCORD_WEBHOOK_URL_HERE",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "username",
+              "value": "={{ $json.bot_name }}"
+            },
+            {
+              "name": "avatar_url",
+              "value": "={{ $json.avatar }}"
+            },
+            {
+              "name": "embeds",
+              "value": "={{ [{\n  \"title\": \"🐋 Whale Alert: \" + $json.amount_formatted + \" QUBIC\",\n  \"description\": \"A significant transaction has been detected on the Qubic network.\",\n  \"color\": $json.embed_color,\n  \"fields\": [\n    {\n      \"name\": \"Amount\",\n      \"value\": $json.amount_formatted + \" QUBIC (\" + $json.amount_usd_formatted + \")\",\n      \"inline\": true\n    },\n    {\n      \"name\": \"Type\",\n      \"value\": $json.type,\n      \"inline\": true\n    },\n    {\n      \"name\": \"From\",\n      \"value\": \"`\" + $json.source_masked + \"`\",\n      \"inline\": false\n    },\n    {\n      \"name\": \"To\",\n      \"value\": \"`\" + $json.dest_masked + \"`\",\n      \"inline\": false\n    },\n    {\n      \"name\": \"Risk Score\",\n      \"value\": $json.risk_score,\n      \"inline\": true\n    }\n  ],\n  \"footer\": {\n    \"text\": \"Tick: \" + $json.tick + \" | Powered by Qubic Sentinel\"\n  },\n  \"url\": \"https://explorer.qubic.org/network/tx/\" + $json.tx_hash,\n  \"timestamp\": $json.timestamp\n}] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "discord-alert",
+      "name": "Send Discord Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1450,
+        200
+      ],
+      "notes": "Sends rich embed to Discord. REPLACE WEBHOOK URL!"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "YOUR_GOOGLE_SHEET_ID_HERE",
+        "range": "A:H",
+        "options": {}
+      },
+      "id": "google-sheets",
+      "name": "Log to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1450,
+        400
+      ],
+      "notes": "Logs transaction to Google Sheets. REQUIRES AUTH SETUP."
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Network Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Network Status": {
+      "main": [
+        [
+          {
+            "node": "Get Tick Transactions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Tick Transactions": {
+      "main": [
+        [
+          {
+            "node": "Whale Filter Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whale Filter Logic": {
+      "main": [
+        [
+          {
+            "node": "Get QUBIC Price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get QUBIC Price": {
+      "main": [
+        [
+          {
+            "node": "Enrich Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Data": {
+      "main": [
+        [
+          {
+            "node": "Send Discord Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
