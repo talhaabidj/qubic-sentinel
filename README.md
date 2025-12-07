@@ -2,76 +2,53 @@
 
 **The Watchtower of the Qubic Ecosystem.**
 
-Qubic Sentinel is a real-time monitoring system that tracks high-value transactions ("Whales") and QX DEX activity on the Qubic blockchain. It delivers instant alerts to Discord and logs data for historical analysis, all running on a **100% free tech stack**.
+> *Bringing transparency to the dark forest of blockchain data.*
 
-![Architecture](docs/ARCHITECTURE.md)
+## 📖 Overview
 
-## 🚀 Features
+The Qubic network is high-performance and tick-based, but its data can be opaque to the average user. "Whales" move billions of units in silence, and market-moving events often go unnoticed until it's too late.
 
-- **Whale Alerts**: Instant notifications for transfers > 1 Billion QUBIC.
-- **QX DEX Monitoring**: Detects buy/sell orders on the Qubic Exchange.
-- **Real-Time Valuation**: Converts QUBIC amounts to USD using CoinGecko.
-- **Risk Scoring**: Flags suspicious or high-volume activity.
-- **Zero Cost**: Runs entirely on free tiers of n8n, Google Sheets, and Discord.
+**Qubic Sentinel** solves this by providing a real-time intelligence layer. It listens to the network pulse, filters for high-value events, and delivers actionable alerts directly to the community.
 
----
+## 🚀 Key Features
 
-## 🛠️ Setup Guide (Manual Steps)
+*   **🐋 Whale Detection**: Instantly flags transactions exceeding **1 Billion QUBIC**.
+*   **⚡ QX DEX Monitoring**: Decodes smart contract interactions to track buy/sell activity on the Qubic Exchange.
+*   **💰 Real-Time Enrichment**: Automatically calculates USD value using live CoinGecko price feeds.
+*   **🛡️ Risk Scoring**: Assigns dynamic risk scores (Low/Medium/High) based on volume and destination.
+*   **📊 Data Archival**: Logs every significant event to Google Sheets for long-term historical analysis.
 
-To get this running, you need to perform a few one-time setup steps.
+## 🏗️ Architecture
 
-### Step 1: Google Sheets Setup 📊
-1. Go to [Google Sheets](https://sheets.google.com) and create a new sheet named **"Qubic Sentinel Logs"**.
-2. Rename the first tab (at the bottom) to `Sentinel_Logs`.
-3. In the first row (A1:H1), add these exact headers:
-   - `timestamp`
-   - `tx_hash`
-   - `source_id`
-   - `dest_id`
-   - `amount_qu`
-   - `amount_usd`
-   - `type`
-   - `risk_score`
-4. **Copy the Sheet ID** from the URL (it's the long string between `/d/` and `/edit`). You'll need this later.
+Qubic Sentinel is built on a **100% Free Tech Stack**, demonstrating the power of the "EasyConnect" ethos—accessible, powerful, and no-code friendly.
 
-### Step 2: Discord Webhook Setup 💬
-1. Open your Discord Server settings.
-2. Go to **Integrations** -> **Webhooks**.
-3. Click **New Webhook**.
-4. Name it "Qubic Sentinel" and choose a channel.
-5. **Copy the Webhook URL**.
+```mermaid
+graph LR
+    A[Qubic Network] -->|RPC Polling| B(n8n Orchestrator)
+    B -->|Filter & Decode| C{Intelligence Engine}
+    C -->|Enrich Price| D[CoinGecko API]
+    D -->|Alert| E[Discord Webhook]
+    D -->|Log| F[Google Sheets]
+```
 
-### Step 3: n8n Configuration ⚙️
-1. **Import the Workflow**:
-   - Open your n8n instance (Cloud or Local).
-   - Click **"Add Workflow"** -> **"Import from File"**.
-   - Select the `workflows/n8n_workflow_sentinel.json` file from this repository.
+*   **Ingestion**: Polls Qubic RPC nodes for tick data.
+*   **Processing**: n8n workflow executes JavaScript logic to filter noise and decode contract inputs.
+*   **Output**: Delivers rich-text embeds to Discord and structured rows to Google Sheets.
 
-2. **Configure Credentials**:
-   - **Discord**: Double-click the "Send Discord Alert" node. Paste your **Webhook URL** into the URL field.
-   - **Google Sheets**: Double-click the "Log to Sheets" node.
-     - You will need to connect a Google account. Follow n8n's prompt to sign in with Google.
-     - Paste your **Sheet ID** into the "Spreadsheet ID" field.
+## 🛠️ Getting Started
 
-3. **Activate**:
-   - Toggle the **Active** switch to `On` (top right).
-   - Save the workflow.
+Want to run your own Sentinel? It's open-source and free.
 
-### Step 4: Looker Studio (Optional - Skipped) 📈
-*This step is optional. If you want to visualize the data later, you can connect Looker Studio to your Google Sheet.*
-1. Go to [Looker Studio](https://lookerstudio.google.com).
-2. Click **Create** -> **Report**.
-3. Select **Google Sheets** as the data source.
-4. Choose your "Qubic Sentinel Logs" sheet.
+### Prerequisites
+*   **n8n** (Cloud Free Tier or Docker)
+*   **Discord Server** (for Webhooks)
+*   **Google Account** (for Sheets)
 
----
-
-## 📂 Project Structure
-
-- `workflows/`: Contains the n8n workflow JSON file.
-- `config/`: Configuration templates.
-- `docs/`: Architecture and design documentation.
+### Quick Setup
+1.  **Database**: Create a Google Sheet with headers: `timestamp`, `tx_hash`, `source_id`, `dest_id`, `amount_qu`, `amount_usd`, `type`, `risk_score`.
+2.  **Alerts**: Create a Discord Webhook in your server settings.
+3.  **Deploy**: Import `workflows/n8n_workflow_sentinel.json` into n8n, connect your accounts, and activate!
 
 ## 📄 License
 
-MIT License. Free to use and modify.
+MIT License. Built for the Qubic Community.
