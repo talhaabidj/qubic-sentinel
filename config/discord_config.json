@@ -1,0 +1,15 @@
+{
+    "webhook_url": "https://discord.com/api/webhooks/1446895982708265081/78-WeJY7583B411b23MmCSXkzjahvb69M820-vX-ow3wMTSi9MujS4EYWpbev0xmNlgJ",
+    "username": "Qubic Sentinel",
+    "avatar_url": "https://github.com/Qubic-Solutions/design-assets/blob/main/logo/png/Qubic_Logo_Icon_Black.png?raw=true",
+    "alert_thresholds": {
+        "whale_minimum": 1000000000,
+        "mega_whale": 10000000000,
+        "suspect_transfer": 50000000000
+    },
+    "embed_colors": {
+        "transfer": 3447003,
+        "qx_interaction": 15844367,
+        "high_risk": 15158332
+    }
+}
