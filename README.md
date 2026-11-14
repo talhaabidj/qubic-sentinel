@@ -46,7 +46,7 @@ Want to run your own Sentinel? It's open-source and free.
 
 ### Quick Setup
 1.  **Database**: Create a Google Sheet with headers: `timestamp`, `tx_hash`, `source_id`, `dest_id`, `amount_qu`, `amount_usd`, `type`, `risk_score`.
-2.  **Alerts**: Create a Discord Webhook in your server settings.
+2.  **Alerts**: Create a Discord Webhook in your server settings and paste its URL into the "Send Discord Alert" node in n8n. `config/discord_config.json` is a template; keep real webhook URLs out of git.
 3.  **Deploy**: Import `workflows/n8n_workflow_sentinel.json` into n8n, connect your accounts, and activate!
 
 ## 📄 License
